@@ -4,9 +4,11 @@
 #include "opencv2/imgproc.hpp"
 #include <math.h> // Tinh sin cos Ronate
 #include <iostream>
+
 using namespace std;
 using namespace cv;
 const float PI = 3.141592653589793238462643383279502884;
+
 // Bỏ lớp transform lên đầu để sử dụng hàm để xây dựng các lớp khác
 /*
 Lớp biểu diễn pháp biến đổi affine

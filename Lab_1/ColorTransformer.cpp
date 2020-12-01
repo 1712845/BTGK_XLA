@@ -1,4 +1,6 @@
-#include "ColorTransformer.h"
+﻿#include "ColorTransformer.h"
+#include <vector>
+
 ColorTransformer::ColorTransformer()
 {
 }
@@ -71,49 +73,117 @@ int ColorTransformer::CalcHistogram(const Mat& sourceImage, Mat& histMatrix) {
 		}
 	}
 
-	for (int i = 0; i < histMatrix.rows; i++) {
-		for (int j = 0; j < histMatrix.cols; j++) {
-			std::cout << "\t" << "(" << i << " , " << j << "): " << histMatrix.at<int>(i, j) << "\t\t";
-		}
-		std::cout << "\n";
-	}
+	//for (int i = 0; i < histMatrix.rows; i++) {
+	//	for (int j = 0; j < histMatrix.cols; j++) {
+	//		std::cout << "\t" << "(" << i << " , " << j << "): " << histMatrix.at<int>(i, j) << "\t\t";
+	//	}
+	//	std::cout << "\n";
+	//}
 
 	return 1;
 }
 
-int ColorTransformer::DrawHistogram(const Mat& histMatrix, Mat& histImage) {
-	if (histMatrix.data == NULL)
-		return 0;
+//int ColorTransformer::DrawHistogram(const Mat& histMatrix, Mat& histImage) {
+//	if (histMatrix.data == NULL)
+//		return 0;
+//
+//	int histSize = 256;
+//	int hist_w = 1024, hist_h = 768;
+//	Scalar scalar[] = { Scalar(255, 0, 0) ,Scalar(0, 255, 0),Scalar(0, 0, 255) };
+//	int bin_w = cvRound((double)hist_w / histSize);
+//	if (histMatrix.cols == 1) {
+//		histImage = cv::Mat(hist_h, hist_w, CV_8UC1, Scalar(0, 0, 0));
+//	}
+//	else {
+//		histImage = cv::Mat(hist_h, hist_w, CV_8UC3, Scalar(0, 0, 0));
+//	}
+//
+//	int histImagechannel = histImage.channels();
+//
+//	normalize(histMatrix, histMatrix, 0, histImage.cols, NORM_MINMAX, -1, Mat());
+//
+//	for (int i = 1; i < histSize; i++)
+//	{
+//		for (int j = 0; j < histImagechannel; j++) {
+//			line(histImage, Point(bin_w*(i - 1), hist_h - cvRound(histMatrix.at<int>((i - 1), j))),
+//				Point(bin_w*(i), hist_h - cvRound(histMatrix.at<int>((i - 1), j))),
+//				scalar[j], 2, 8, 0);
+//		}
+//
+//	}
+//	imshow("calcHist Demo", histImage);
+//	waitKey();
+//	return EXIT_SUCCESS;
+//}
 
+int ColorTransformer::DrawHistogram(const Mat& sourceImage, Mat& destinationImage)
+{
+	// Thiết lập các thông số cho ảnh histogram
 	int histSize = 256;
-	int hist_w = 1024, hist_h = 768;
-	Scalar scalar[] = { Scalar(255, 0, 0) ,Scalar(0, 255, 0),Scalar(0, 0, 255) };
-	int bin_w = cvRound((double)hist_w / histSize);
-	if (histMatrix.cols == 1) {
-		histImage = cv::Mat(hist_h, hist_w, CV_8UC1, Scalar(0, 0, 0));
+	int hist_w = 0;
+	int hist_h = 400;
+	int bin_w = 2;
+
+	if (sourceImage.channels() == 1) {
+		hist_w = histSize * bin_w;
 	}
-	else {
-		histImage = cv::Mat(hist_h, hist_w, CV_8UC3, Scalar(0, 0, 0));
+	else if (sourceImage.channels() == 3) {
+		hist_w = histSize * bin_w * 3;
 	}
 
-	int histImagechannel = histImage.channels();
+	Mat tempHistImg(hist_h, hist_w, CV_8UC3, Scalar(0, 0, 0));
+	Mat calculatedHist;
 
-	normalize(histMatrix, histMatrix, 0, histImage.cols, NORM_MINMAX, -1, Mat());
+	// Tính phân bố histogram
+	CalcHistogram(sourceImage, calculatedHist);
 
-	for (int i = 1; i < histSize; i++)
+	if (sourceImage.channels() == 1)
 	{
-		for (int j = 0; j < histImagechannel; j++) {
-			line(histImage, Point(bin_w*(i - 1), hist_h - cvRound(histMatrix.at<int>((i - 1), j))),
-				Point(bin_w*(i), hist_h - cvRound(histMatrix.at<int>((i - 1), j))),
-				scalar[j], 2, 8, 0);
+
+		// Chuẩn hóa để histogram vừa vặn với ảnh
+		//normalize(calculatedHist, calculatedHist, 0, tempHistImg.rows, NORM_MINMAX, -1, Mat());
+
+		// Vẽ histogram lên ảnh
+		for (int i = 0; i < histSize; i++) {
+			line(tempHistImg, Point(bin_w * (i), hist_h),
+				Point(bin_w * (i), hist_h - cvRound(calculatedHist.at<float>(i))),
+				Scalar(220, 220, 220), bin_w, 8, 0);
+		}
+	}
+	else if (sourceImage.channels() == 3)
+	{
+		std::vector<Mat> bgr_planes;
+		split(calculatedHist, bgr_planes);
+
+
+		normalize(bgr_planes[0], bgr_planes[0], 0, tempHistImg.rows, NORM_MINMAX, -1, Mat());
+		normalize(bgr_planes[1], bgr_planes[1], 0, tempHistImg.rows, NORM_MINMAX, -1, Mat());
+		normalize(bgr_planes[2], bgr_planes[2], 0, tempHistImg.rows, NORM_MINMAX, -1, Mat());
+
+		//Vẽ histogram của từng kênh màu lên ảnh
+		for (int i = 0; i < histSize; i++)
+		{
+			line(tempHistImg, Point(bin_w * (i), hist_h),
+				Point(bin_w * (i), hist_h - cvRound(bgr_planes[0].at<float>(i))),
+				Scalar(255, 0, 0), bin_w, 8, 0);
+		}
+
+		for (int i = 0; i < histSize; i++) {
+			line(tempHistImg, Point(bin_w * (i + histSize), hist_h),
+				Point(bin_w * (i + histSize), hist_h - cvRound(bgr_planes[1].at<float>(i))),
+				Scalar(0, 255, 0), bin_w, 8, 0);
+		}
+
+		for (int i = 0; i < histSize; i++) {
+			line(tempHistImg, Point(bin_w * (i + histSize * 2), hist_h),
+				Point(bin_w * (i + histSize * 2), hist_h - cvRound(bgr_planes[2].at<float>(i))),
+				Scalar(0, 0, 255), bin_w, 8, 0);
 		}
 
 	}
-	imshow("calcHist Demo", histImage);
-	waitKey();
-	return EXIT_SUCCESS;
+	tempHistImg.copyTo(destinationImage);
+	return 1;
 }
-
 
 int ColorTransformer::ChangeContrast(const Mat& sourceImage, Mat& destinationImage, float c) {
 	if (sourceImage.data == NULL)

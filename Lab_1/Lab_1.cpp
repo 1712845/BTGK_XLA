@@ -8,42 +8,68 @@ using namespace std;
 
 
 void help();
+int CalculateHistogram(const Mat& sourceImage, Mat& destinationImage)
+{
+	int histSize = 256;
+	Mat histImg;
 
-void method_1(cv::Mat & image, int n) {
-	// get image width
-	int width = image.cols;
-	// get image height
-	int height = image.rows;
-	for (int y = 0; y < height; y++) {
-		for (int x = 0; x < width; x++) {
-			// for grayscale image
-			if (image.channels() == 1) {
-				image.at < uchar >(x, y) = 255;
-			}
-			// for color image
-			else if (image.channels() == 3) {
-				cv::Vec3b & pixel = image.at < cv::Vec3b >(x, y);
-				// get the first color in this pixel ( blue )
-				pixel[0] = 255;
-				// get the second color in this pixel ( green )
-				pixel[1] = 255;
-				// get the last color in this pixel ( red )
-				pixel[2] = 255;
+	// Ảnh xám
+	if (sourceImage.channels() == 1)
+	{
+		// Khởi tạo ảnh chứa histogram
+		Mat temp(histSize, 1, CV_32FC1, Scalar(0));
+
+		// Thống kê số lượng điểm ảnh ở mỗi bins
+		int nRows = sourceImage.rows, nCols = sourceImage.cols;
+		for (int y = 0; y < nRows; y++)
+		{
+			const uchar* pRow = sourceImage.ptr<uchar>(y);
+			for (int x = 0; x < nCols; x++)
+			{
+				int index = int(pRow[x]);
+				temp.ptr<float>(index)[0]++;
 			}
 		}
+
+		// Sao chép ảnh temp sang ảnh histImg
+		temp.copyTo(histImg);
 	}
+	else if (sourceImage.channels() == 3) // Ảnh màu
+	{
+		// Khởi tạo ảnh chứa histogram
+		Mat temp(histSize, 1, CV_32FC3, Scalar(0, 0, 0));
+
+		// Thống kê số lượng điểm ảnh ở mỗi bins
+		int nRows = sourceImage.rows, nCols = sourceImage.cols, nChannels = sourceImage.channels();
+		for (int y = 0; y < nRows; y++)
+		{
+			const uchar* pRow = sourceImage.ptr<uchar>(y);
+			for (int x = 0; x < nCols; x++, pRow += nChannels)
+			{
+				temp.ptr<float>(int(pRow[0]))[0]++;
+				temp.ptr<float>(int(pRow[1]))[1]++;
+				temp.ptr<float>(int(pRow[2]))[2]++;
+			}
+		}
+
+		// Sao chép ảnh temp sang ảnh histImg
+		temp.copyTo(histImg);
+	}
+	else {
+		return 0;
+	}
+
+	// Sao chép dữ liệu ảnh histogram sang ảnh output.
+	histImg.copyTo(destinationImage);
+	return 1;
 }
 
-void colorReduce(cv::Mat &image, int div = 64) {
-	int nl = image.rows; // number of lines
-	int nc = image.cols * image.channels();
-	for (int j = 0; j < nl; j++) {
-		// lấy địa chỉ của dòng thứ j
-		uchar* data = image.ptr<uchar>(j);
-		for (int i = 0; i < nc; i++) {
-			// xử lý trên mỗi pixel
-			data[i] = data[i] / div * div + div / 2;
-		} // end of line
+void printMat(Mat m) {
+	for (int i = 0; i < m.rows; i++) {
+		for (int j = 0; j < m.cols; j++) {
+			cout << m.at<int>(i, j)<<"\t";
+		}
+		cout << "\n";
 	}
 }
 
@@ -52,23 +78,20 @@ int main2(int argc, string argv[])
 	//Mat image = imread("E:\\4.jpg", IMREAD_COLOR); // Read the file
 	Mat image = imread("E:\\4.jpg", IMREAD_GRAYSCALE); // Read the file
 	//imwrite("E:\\4.jpg", image);
+
 	ColorTransformer t;
 	Converter c;
 	imshow(" Show 1", image);
 	Mat img2;
 
 	//t.CalcHistogram(image, img2);
-	c.Convert(image, img2, 1);
-	//t.HistogramEqualization(image, img2);
-	imshow(" Show 2", img2);
+	t.DrawHistogram(image, img2);
+
+	printMat(img2);
 
 	waitKey(0);
 	return 0;
 }
-
-
-
-//////////////////////////
 
 
 
@@ -180,6 +203,6 @@ void help() {
 			cout << line << '\n';
 		}
 		myfile.close();
-	} 
+	}
 	else cout << "Unable to open file";
 }
