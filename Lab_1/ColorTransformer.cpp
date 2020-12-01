@@ -121,7 +121,7 @@ int ColorTransformer::ChangeContrast(const Mat& sourceImage, Mat& destinationIma
 	int width = sourceImage.cols, height = sourceImage.rows;
 	int srcChannels = sourceImage.channels();
 
-		if (srcChannels == 1) {
+	if (srcChannels == 1) {
 		destinationImage = cv::Mat(height, width, CV_8UC1);
 	}
 	else {
@@ -168,8 +168,8 @@ int ColorTransformer::HistogramEqualization(const Mat& sourceImage, Mat& destina
 	Mat newHist = Mat::zeros(256, srcChannels, CV_32S);
 
 	int width = sourceImage.cols, height = sourceImage.rows;
-	
-	int total = width*height;
+
+	int total = width * height;
 
 
 	if (srcChannels == 1) {
@@ -191,7 +191,7 @@ int ColorTransformer::HistogramEqualization(const Mat& sourceImage, Mat& destina
 	int curr[3] = { 0 };
 
 	//accumulate histogram
-	for (int i = 0; i < hist.rows ; i++) {
+	for (int i = 0; i < hist.rows; i++) {
 		for (int j = 0; j < hist.cols; j++)
 		{
 			curr[j] += hist.at<int>(i, j);
@@ -214,41 +214,70 @@ int ColorTransformer::HistogramEqualization(const Mat& sourceImage, Mat& destina
 }
 
 
-float ColorTransformer::CompareImage(const Mat& image1, Mat& image2) {
-		ColorTransformer CV;
-		Mat max1;
-		Mat max2;
-		CV.CalcHistogram(image1, max1);
-		CV.CalcHistogram(image2, max2);
-		float res = 0;
-		float* a = new float[max1.rows];
-		float* b = new float[max2.rows];
-		for (int i = 0; i < max1.rows; i++) {
-			a[i] = 0;
-			b[i] = 0;
-		}
-		for (int i = 0; i < max1.rows; i++) {
-			for (int j = 0; j < max1.cols; j++) {
-				a[i] += max1.at<int>(i, j);
-			}
-			a[i] /= max1.cols;
-		}
-		for (int i = 0; i < max2.rows; i++) {
-			for (int j = 0; j < max2.cols; j++) {
-				b[i] += max2.at<int>(i, j);
-			}
-			b[i] /= max2.cols;
-		}
-		for (int i = 0; i < max2.rows; i++) {
-			for (int j = 0; j < max2.cols; j++) {
-				printf("%f\n", res);
-				res += min(a[i], b[i]);
-			}
-		}
-		res /= 256;
-		delete[] a;
-		delete[] b;
-		return res;
+float dist(float a[], float b[]) {
+	float* euc = new float[256];
+	float lib1 = 0;
+	float lib2 = 0;
+	for (int i = 0; i < 256; i++)
+	{
+		lib1 += powf(a[i], 2);
+		lib2 += powf(b[i], 2);
 	}
+	lib1 = sqrt(lib1);
+	lib2 = sqrt(lib2);
+	printf("%f	%f\n", lib1, lib2);
 
+	for (int i = 0; i < 256; i++)
+	{
+		a[i] = a[i] / lib1;
+		b[i] = b[i] / lib2;
+	}
+	for (int i = 0; i < 256; i++)
+	{
+		euc[i] = sqrtf(powf((a[i] - b[i]), 2));
+	}
+	for (int i = 0; i < 256; i++)
+		printf("%f\n", euc[i]);
+	return 1;
+
+}
+float ColorTransformer::CompareImage(const Mat& image1, Mat& image2) {
+	ColorTransformer CV;
+	Mat max1;
+	Mat max2;
+	CV.CalcHistogram(image1, max1);
+	CV.CalcHistogram(image2, max2);
+	float res = 0;
+	float* a = new float[max1.rows];
+	float* b = new float[max2.rows];
+	for (int i = 0; i < max1.rows; i++) {
+		a[i] = 0;
+		b[i] = 0;
+	}
+	for (int i = 0; i < max1.rows; i++) {
+		for (int j = 0; j < max1.cols; j++) {
+			a[i] += max1.at<int>(i, j);
+		}
+		a[i] /= max1.cols;
+	}
+	for (int i = 0; i < max2.rows; i++) {
+		for (int j = 0; j < max2.cols; j++) {
+			b[i] += max2.at<int>(i, j);
+		}
+		b[i] /= max2.cols;
+	}
+	dist(a, b);
+	printf("\n\n\n\n\n\n");
+	for (int i = 0; i < max2.rows; i++) {
+		for (int j = 0; j < max2.cols; j++) {
+			printf("%f\n", res);
+			res += abs(a[i] - b[i]);
+		}
+	}
+	res /= 256;
+	delete[] a;
+	delete[] b;
+	printf("%f", res);
+	return res;
+}
 
