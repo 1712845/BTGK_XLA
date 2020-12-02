@@ -74,6 +74,9 @@ public:
 	//tx = nrow, ty = ncol
 	vector<uchar> Interpolate(float tx, float ty, uchar* pSrc, int srcWidthStep, int nChannels);
 	BilinearInterpolate(AffineTransform* affine, Mat source);
+	BilinearInterpolate();
+
+
 	void setAffineMatrix(AffineTransform* m);
 	~BilinearInterpolate();
 };
@@ -193,6 +196,7 @@ public:
 	int Flip(const Mat &srcImage,
 		Mat &dstImage,bool direction,
 		PixelInterpolate* interpolator);
+
 
 	GeometricTransformer();
 	~GeometricTransformer();

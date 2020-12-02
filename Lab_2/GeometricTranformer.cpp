@@ -117,10 +117,14 @@ PixelInterpolate::~PixelInterpolate() {
 
 }
 
+BilinearInterpolate::BilinearInterpolate() {
+}
+
 BilinearInterpolate::BilinearInterpolate(AffineTransform* affine, Mat source) {
 	this->matrix = affine;
 	this->src = source;
 }
+
 
 BilinearInterpolate::~BilinearInterpolate() {
 
@@ -175,55 +179,11 @@ vector<uchar> BilinearInterpolate::Interpolate(float tx, float ty, uchar* pSrc, 
 }
 
 
-//int GeometricTransformer::Scale(
-//	const Mat &srcImage,
-//	Mat &dstImage,
-//	float sx, float sy,
-//	PixelInterpolate* interpolator) {
-//
-//	//sx phong to, sy thu nho
-//
-//	if (srcImage.data == NULL)
-//		return 0;
-//	int width = srcImage.cols, height = srcImage.rows;
-//	int widthx = srcImage.cols * sx, heightx = srcImage.rows*sx;
-//	int widthy = srcImage.cols/sy, heighty = srcImage.rows/sy;
-//
-//	int srcChannels = srcImage.channels();
-//
-//	if (srcChannels == 1) {
-//		dstImage = cv::Mat(height, width, CV_8UC1);
-//	}
-//	else {
-//		dstImage = cv::Mat(heightx, widthx, CV_8UC3);
-//	}
-//
-//	int srcWidthStep = srcImage.step[0];
-//	int dstWidthStep = dstImage.step[0];
-//
-//	uchar* pSrcData = srcImage.data;
-//	uchar* pDstData = dstImage.data;
-//
-//	//sx
-//	for (int y = 0; y < heightx; y++, pSrcData += srcWidthStep, pDstData += dstWidthStep) {
-//		uchar* pSrcRow = pSrcData;
-//		uchar* pDstRow = pDstData;
-//		for (int x = 0; x < width; x++, pSrcRow += srcChannels, pDstRow += dstChannels) {
-//			for (int i = 0; i < srcChannels; i++) {
-//				// saturate_cast<uchar> lam tron pixel ve [0..255] dung nhat vd 257->1 (sai) 
-//				// => 257->255 (dung) 
-//				pDstRow[i] = saturate_cast<uchar>(pSrcRow[i] * c);
-//			}
-//		}
-//	}
-//
-//
-//	return 1;
-//}
+
+GeometricTransformer::GeometricTransformer() {}
+GeometricTransformer::~GeometricTransformer() {}
 
 
-
-//----------SCale
 int GeometricTransformer::Scale(const Mat& srcImage, Mat& dstImage, float sx, float sy, PixelInterpolate* interpolator)
 {
 	if (srcImage.data == NULL || sx < 0.001 || sy < 0.001)
@@ -236,11 +196,11 @@ int GeometricTransformer::Scale(const Mat& srcImage, Mat& dstImage, float sx, fl
 	int srcCol = srcImage.cols;
 	int nChannel = srcImage.channels();
 
-	// Tính toán dstRow, dstCol
+	// Thông số ảnh destImage
 	int dstRow = int(ceil(srcRow * sy));
 	int dstCol = int(ceil(srcCol * sx));
 
-	// Khởi tạo dstImage với kích thước thích hợp
+	// Khởi tạo dstImage với kích thước đã tính
 	dstImage = Mat(dstRow, dstCol, CV_8UC3, Scalar(0));
 
 	// Tìm phép biến đổi affine ngược
@@ -443,7 +403,7 @@ int GeometricTransformer::Transform(
 				{
 					for (int c = 0; c < sourceChannels; c++) {
 						// Áp dụng Interpolate cho từng channel
-						//pData[j * sourceChannels + c] = interpolator->Interpolate(tx, ty, pSrc + c, sourceWidthStep, sourceChannels);
+						pData[j * sourceChannels + c] = interpolator->Interpolate(tx, ty, pSrc + c, sourceWidthStep, sourceChannels)[i];
 					}
 				}
 			}
