@@ -1,4 +1,5 @@
 ﻿#include "ColorTransformer.h"
+#include"Converter.h"
 #include <vector>
 
 ColorTransformer::ColorTransformer()
@@ -144,6 +145,7 @@ int ColorTransformer::DrawHistogram(const Mat& sourceImage, Mat& destinationImag
 		//normalize(calculatedHist, calculatedHist, 0, tempHistImg.rows, NORM_MINMAX, -1, Mat());
 
 		// Vẽ histogram lên ảnh
+
 		for (int i = 0; i < histSize; i++) {
 			line(tempHistImg, Point(bin_w * (i), hist_h),
 				Point(bin_w * (i), hist_h - cvRound(calculatedHist.at<float>(i))),
@@ -227,20 +229,17 @@ int ColorTransformer::ChangeContrast(const Mat& sourceImage, Mat& destinationIma
 
 
 int ColorTransformer::HistogramEqualization(const Mat& sourceImage, Mat& destinationImage) {
-	//greyscale
 	if (sourceImage.data == NULL)
 		return 0;
 	int srcChannels = sourceImage.channels();
 	Mat hist;
 	CalcHistogram(sourceImage, hist);
-	//Mat new_gray_level = Mat();
-	int newhist[256];
+	
 	Mat newHist = Mat::zeros(256, srcChannels, CV_32S);
 
 	int width = sourceImage.cols, height = sourceImage.rows;
 
 	int total = width * height;
-
 
 	if (srcChannels == 1) {
 		destinationImage = cv::Mat(height, width, CV_8UC1);
@@ -248,7 +247,6 @@ int ColorTransformer::HistogramEqualization(const Mat& sourceImage, Mat& destina
 	else {
 		destinationImage = cv::Mat(height, width, CV_8UC3);
 	}
-
 
 	int dstChannels = destinationImage.channels();
 
@@ -258,14 +256,14 @@ int ColorTransformer::HistogramEqualization(const Mat& sourceImage, Mat& destina
 	uchar* pSrcData = sourceImage.data;
 	uchar* pDstData = destinationImage.data;
 
-	int curr[3] = { 0 };
+	int curr[3] = { 0 }; // cur 3 kenh mau
 
 	//accumulate histogram
 	for (int i = 0; i < hist.rows; i++) {
 		for (int j = 0; j < hist.cols; j++)
 		{
-			curr[j] += hist.at<int>(i, j);
-			newHist.at<int>(i, j) = round((((float)curr[j]) * 255) / total);
+			curr[j] += hist.at<int>(i, j); //tich luy
+			newHist.at<int>(i, j) = round((((float)curr[j]) * 255) / total);//chuan hoa
 		}
 	}
 
@@ -283,6 +281,93 @@ int ColorTransformer::HistogramEqualization(const Mat& sourceImage, Mat& destina
 	return 1;
 }
 
+#pragma region Can bang kenh V trong hsv
+//int ColorTransformer::HistogramEqualization(const Mat& sourceImage, Mat& destinationImage) {
+//	if (sourceImage.data == NULL)
+//		return 0;
+//
+//	int srcChannels = sourceImage.channels();
+//	Mat hist, hsv;
+//	Converter ct;
+//
+//	CalcHistogram(sourceImage, hist);
+//
+//	Mat newHist = Mat::zeros(256, 1, CV_32S);
+//
+//	int width = sourceImage.cols, height = sourceImage.rows;
+//
+//	int total = width * height;
+//
+//	if (srcChannels == 1) { //grayscale
+//		destinationImage = cv::Mat(height, width, CV_8UC1);
+//	}
+//	else { //color
+//		destinationImage = cv::Mat(height, width, CV_8UC3);
+//
+//		Mat src;
+//		sourceImage.copyTo(src);
+//		ct.Convert(src, hsv, 2); // hsv mat
+//		CalcHistogram(hsv, hist);// histogram of hsv
+//	}
+//
+//
+//	int dstChannels = destinationImage.channels();
+//
+//	int srcWidthStep = sourceImage.step[0];
+//	int dstWidthStep = destinationImage.step[0];
+//
+//	uchar* pSrcData = sourceImage.data;
+//	uchar* pDstData = destinationImage.data;
+//
+//	//accumulate histogram va chuan hoa
+//	std::cout << srcChannels << std::endl;;
+//	if (srcChannels == 1) {
+//		int curr = 0;
+//		for (int i = 0; i < hist.rows; i++) {
+//			curr += hist.at<int>(i, 0); // tich luy
+//			newHist.at<int>(i, 0) = round((((float)curr) * 255) / total);//chuan hoa
+//		}
+//
+//		for (int y = 0; y < height; y++, pSrcData += srcWidthStep, pDstData += dstWidthStep) {
+//			uchar* pSrcRow = pSrcData;
+//			uchar* pDstRow = pDstData;
+//
+//			for (int x = 0; x < width; x++, pSrcRow += srcChannels, pDstRow += dstChannels) {
+//				for (int i = 0; i < srcChannels; i++) {
+//					pDstRow[i] = newHist.at<int>((pSrcRow[i]), i);
+//
+//				}
+//			}
+//		}
+//	}
+//	else {
+//		int curr = 0;
+//		for (int i = 0; i < hist.rows; i++) {
+//			curr += hsv.at<int>(i, 0);
+//			newHist.at<int>(i, 2) = round((((float)curr) * 255) / total);  //chuan hoa kenh V trong hsv
+//
+//			Mat temp;
+//			newHist.copyTo(temp);
+//			ct.Convert(temp, newHist, 3);
+//		}
+//
+//		for (int y = 0; y < height; y++, pSrcData += srcWidthStep, pDstData += dstWidthStep) {
+//			uchar* pSrcRow = pSrcData;
+//			uchar* pDstRow = pDstData;
+//
+//			for (int x = 0; x < width; x++, pSrcRow += srcChannels, pDstRow += dstChannels) {
+//				for (int i = 0; i < srcChannels; i++) {
+//					pDstRow[i] = newHist.at<int>((pSrcRow[i]), i);
+//
+//				}
+//			}
+//		}
+//	}
+//
+//	return 1;
+//}
+
+#pragma endregion
 
 float dist(float a[], float b[]) {
 	float* euc = new float[256];

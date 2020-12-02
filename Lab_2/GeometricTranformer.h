@@ -24,6 +24,17 @@ public:
 	void TransformPoint(float &x, float &y);//transform 1 điểm (x,y) theo matrix transform đã có
 
 	void r_TransformPoint(float &x, float &y); // transform thêm vào cho affine ngược
+	Mat getMatrixTransform() {
+		return _matrixTransform;
+	}
+
+	void setMatrixTransform(Mat mat) {
+		mat.copyTo(_matrixTransform);
+	}
+
+
+	
+	
 	AffineTransform();
 	~AffineTransform();
 };

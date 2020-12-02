@@ -10,6 +10,7 @@ AffineTransform::AffineTransform() {
 AffineTransform::~AffineTransform() {
 
 }
+
 void AffineTransform::Translate(float dx, float dy) {
 	Mat temp = cv::Mat::eye(3, 3, CV_32FC1);
 	Mat r_temp = cv::Mat::eye(3, 3, CV_32FC1);
@@ -115,6 +116,7 @@ PixelInterpolate::PixelInterpolate() {
 PixelInterpolate::~PixelInterpolate() {
 
 }
+
 BilinearInterpolate::BilinearInterpolate(AffineTransform* affine, Mat source) {
 	this->matrix = affine;
 	this->src = source;
@@ -123,6 +125,8 @@ BilinearInterpolate::BilinearInterpolate(AffineTransform* affine, Mat source) {
 BilinearInterpolate::~BilinearInterpolate() {
 
 }
+
+
 void BilinearInterpolate::setAffineMatrix(AffineTransform* m) {
 	this->matrix = m;
 }
@@ -219,132 +223,7 @@ vector<uchar> BilinearInterpolate::Interpolate(float tx, float ty, uchar* pSrc, 
 
 
 
-///////////////
-
-int GeometricTransformer::Transform(const Mat& beforeImage, Mat& afterImage, AffineTransform* transformer, PixelInterpolate* interpolator)
-{
-	if (beforeImage.data == NULL || beforeImage.channels() != afterImage.channels())
-	{
-		return 0;
-	}
-	// Thông số ảnh afterImage
-	int dstRow = afterImage.rows;
-	int dstCol = afterImage.cols;
-	int dstWidthStep = afterImage.step1();
-
-	// Thông số ảnh beforeImage
-	int srcRow = beforeImage.rows;
-	int srcCol = beforeImage.cols;
-	int srcWidthStep = beforeImage.step1();
-
-	int nChannel = beforeImage.channels();
-
-	uchar* pSrcData = (uchar*)beforeImage.data;
-	uchar* pDstData = (uchar*)afterImage.data;
-
-	// Duyệt trên ảnh afterImage
-	for (int y = 0; y < dstRow; y++)
-	{
-		for (int x = 0; x < dstCol; x++)
-		{
-			// Tìm tọa độ tương ứng tx, ty ở ảnh beforeImage qua ánh xạ ngược
-			float tx = x, ty = y;
-			transformer->TransformPoint(tx, ty);
-
-			// Duyệt từng kênh màu, tìm màu nội suy
-			for (int k = 0; k < nChannel; k++)
-			{
-				uchar color = 0;
-				if (tx >= 0 && tx <= srcCol && ty >= 0 && ty <= srcRow)
-				{
-					color = interpolator->Interpolate(tx, ty, pSrcData + k, srcWidthStep, nChannel);
-				}
-
-				// Gán màu nội suy cho điểm ảnh của afterImage
-				int index = y * dstWidthStep + x * nChannel + k;
-				pDstData[index] = color;
-			}
-		}
-	}
-	return 1;
-}
-
-int GeometricTransformer::RotateKeepImage(const Mat& srcImage, Mat& dstImage, float angle, PixelInterpolate* interpolator)
-{
-	if (srcImage.data == NULL)
-	{
-		return 0;
-	}
-
-	// Thông số ảnh srcImage
-	int srcRow = srcImage.rows;
-	int srcCol = srcImage.cols;
-	int nChannel = srcImage.channels();
-
-	// Tính toán dstRow, dstCol
-	float w = float(srcCol);
-	float h = float(srcRow);
-	float diag = sqrt(w * w + h * h);
-
-	float alpha0 = atan2(h, w);
-	float new_w = max(fabs(diag * cos(-alpha0 + angle)),
-		fabs(diag * cos(alpha0 + angle)));
-	float new_h = max(fabs(diag * sin(-alpha0 + angle)),
-		fabs(diag * sin(alpha0 + angle)));
-
-	int dstRow = int(ceil(new_h));
-	int dstCol = int(ceil(new_w));
-
-	// Khởi tạo dstImage với kích thước thích hợp
-	if (nChannel == 1)
-		dstImage = Mat(dstRow, dstCol, CV_8UC1, Scalar(0));
-	else if (nChannel == 3)
-		dstImage = Mat(dstRow, dstCol, CV_8UC3, Scalar(0));
-
-	// Tìm phép biến đổi affine ngược
-	AffineTransform* affineTrans = new AffineTransform();
-	affineTrans->Translate(-new_w / 2, -new_h / 2);
-	affineTrans->Rotate(-angle);
-	affineTrans->Translate(srcCol / 2.0f, srcRow / 2.0f);
-
-	// Thực hiện biến đổi
-	int ret = this->Transform(srcImage, dstImage, affineTrans, interpolator);
-	return ret;
-}
-
-int GeometricTransformer::RotateUnkeepImage(const Mat& srcImage, Mat& dstImage, float angle, PixelInterpolate* interpolator)
-{
-	if (srcImage.data == NULL)
-	{
-		return 0;
-	}
-
-	// Thông số ảnh srcImage
-	int srcRow = srcImage.rows;
-	int srcCol = srcImage.cols;
-	int nChannel = srcImage.channels();
-
-	// Tính toán dstRow, dstCol
-	int dstRow = srcRow;
-	int dstCol = srcCol;
-
-	// Khởi tạo dstImage với kích thước thích hợp
-	if (nChannel == 1)
-		dstImage = Mat(dstRow, dstCol, CV_8UC1, Scalar(0));
-	else if (nChannel == 3)
-		dstImage = Mat(dstRow, dstCol, CV_8UC3, Scalar(0));
-
-	// Tìm phép biến đổi affine ngược
-	AffineTransform* affineTrans = new AffineTransform();
-	affineTrans->Translate(-srcCol / 2.0f, -srcRow / 2.0f);
-	affineTrans->Rotate(-angle);
-	affineTrans->Translate(srcCol / 2.0f, srcRow / 2.0f);
-
-	// Thực hiện biến đổi
-	int ret = this->Transform(srcImage, dstImage, affineTrans, interpolator);
-	return ret;
-}
-
+//----------SCale
 int GeometricTransformer::Scale(const Mat& srcImage, Mat& dstImage, float sx, float sy, PixelInterpolate* interpolator)
 {
 	if (srcImage.data == NULL || sx < 0.001 || sy < 0.001)
@@ -394,106 +273,184 @@ int GeometricTransformer::Resize(const Mat& srcImage, Mat& dstImage, int newWidt
 	return ret;
 }
 
-int GeometricTransformer::Flip(const Mat& srcImage, Mat& dstImage, bool direction, PixelInterpolate* interpolator)
-{
-	if (srcImage.data == NULL)
-		return 0;
 
-	int height = srcImage.rows;
-	int width = srcImage.cols;
-	int nChannels = srcImage.channels();
+//////////////////////////////////-------------------------------------------------------------
 
-	//Khởi tạo dstImage bằng với chiều của srcImage
-	dstImage = Mat(height, width, CV_8UC3, Scalar(0));
-
-	//Lấy widthStep của srcImage và dstImage
-	int dstWidthStep = dstImage.step1();
-	int srcWidthStep = srcImage.step1();
-
-	uchar* pSrcData = srcImage.data;
-	uchar* pDstData = dstImage.data;
-
-	//Trục ngang
-	if (direction == 1) {
-		//Lấy giá trị y ở giữa ảnh
-		float axis_y = height / 2.0;
-
-		for (int y = 0; y < height; y++)
-		{
-			for (int x = 0; x < width; x++)
-			{
-				//Giữ nguyên x
-				float tx = x, ty;
-				//Nếu y > axis_y thì y nằm ở trên trục, ngược lại y nằm dưới
-				if (y >= axis_y)
-					ty = y - axis_y;
-				else
-					ty = y + axis_y;
-
-				// Duyệt từng kênh màu, tìm màu nội suy
-				for (int k = 0; k < nChannels; k++)
-				{
-					uchar color = interpolator->Interpolate(tx, ty, pSrcData + k, srcWidthStep, nChannels);
-					int index = y * dstWidthStep + x * nChannels + k;
-					pDstData[index] = color;
-				}
-			}
-		}
+int GeometricTransformer::RotateKeepImage(
+	const cv::Mat & srcImage, cv::Mat & dstImage, float angle, PixelInterpolate * interpolator) {
+	// Kiểm trả ảnh đầu vào
+	if (!srcImage.data) {
+		// Phát hiện lỗi: ảnh input ko tồn tại
+		std::cout << "[EXCEPTION] Error with input image.\n";
+		return 0; // Trả về 0
 	}
-	//Trục đứng
+
+	// Chiều rộng của ảnh source
+	int widthSourceImage = srcImage.cols;
+
+	// Chiều cao của ảnh source
+	int heigthSourceImage = srcImage.rows;
+
+	// Số channels của ảnh source
+	int sourceChannels = srcImage.channels();
+
+	size_t sourceWidthStep = srcImage.step[0];
+
+	int dstWidth = (int)(widthSourceImage * cos(angle * PI / 180) + heigthSourceImage * sin(angle * PI / 180));
+	int dstHeight = (int)(widthSourceImage * sin(angle * PI / 180) + heigthSourceImage * cos(angle * PI / 180));
+
+	AffineTransform affineTransform;
+	affineTransform.Translate(dstHeight / 2 - heigthSourceImage / 2, dstWidth / 2 - widthSourceImage / 2);
+	affineTransform.Translate(-dstHeight / 2, -dstWidth / 2);
+	affineTransform.Rotate(angle);
+	affineTransform.Translate(dstHeight / 2, dstWidth / 2);
+
+	cv::Mat inverseMatrix = affineTransform.getMatrixTransform().inv();
+
+	affineTransform.setMatrixTransform(inverseMatrix);
+
+	uchar* pSrc = srcImage.data;
+
+	if (sourceChannels == 1) {
+		dstImage = cv::Mat::zeros(dstHeight, dstWidth, CV_8UC1);
+	}
+	else if (sourceChannels == 3) {
+		dstImage = cv::Mat::zeros(dstHeight, dstWidth, CV_8UC3);
+	}
 	else {
-		//Lấy giá trị x ở giữa ảnh
-		float axis_x = width / 2.0;
-		for (int y = 0; y < height; y++)
-		{
-			for (int x = 0; x < width; x++)
-			{
-				//Giữ nguyên y
-				float tx, ty = y;
-				//Nếu x > axis_x thì y nằm ở bên phải trục, ngược lại y nằm bên trái trục
-				if (x >= axis_x)
-					tx = x - axis_x;
-				else
-					tx = x + axis_x;
+		std::cout << "[EXCEPTION]\n";
 
-				// Duyệt từng kênh màu, tìm màu nội suy
-				for (int k = 0; k < nChannels; k++)
-				{
-					uchar color = interpolator->Interpolate(tx, ty, pSrcData + k, srcWidthStep, nChannels);
-					int index = y * dstWidthStep + x * nChannels + k;
-					pDstData[index] = color;
-				}
-			}
-		}
 	}
 
+	GeometricTransformer::Transform(srcImage, dstImage, &affineTransform, interpolator);
+	inverseMatrix.release();
+	affineTransform.~AffineTransform();
 	return 1;
 }
 
-GeometricTransformer::GeometricTransformer()
-{
-}
 
-GeometricTransformer::~GeometricTransformer()
-{
-}
+/*
+Hàm xoay không bảo toàn nội dung ảnh theo góc xoay cho trước
+Tham số
+- srcImage: ảnh input
+- dstImage: ảnh sau khi thực hiện phép xoay
+- angle: góc xoay (đơn vị: độ)
+- interpolator: biến chỉ định phương pháp nội suy màu
+Trả về:
+ - 0: Nếu ảnh input ko tồn tại hay ko thực hiện được phép biến đổi
+ - 1: Nếu biến đổi thành công
+*/
+int GeometricTransformer::RotateUnkeepImage(
+	const cv::Mat & srcImage,
+	cv::Mat & dstImage,
+	float angle,
+	PixelInterpolate * interpolator) {
 
-Mat matrixDot(const Mat& mat1, const Mat& mat2)
-{
-	Mat result = Mat(3, 3, CV_32FC1, Scalar(0));
-
-	for (int i = 0; i < 3; i++)
-	{
-		for (int j = 0; j < 3; j++)
-		{
-			float sum = 0;
-			for (int k = 0; k < 3; k++)
-			{
-				sum += mat1.at<float>(i, k) * mat2.at<float>(k, j);
-			}
-			result.at<float>(i, j) = sum;
-		}
+	// Kiểm trả ảnh đầu vào
+	if (!srcImage.data) {
+		// Phát hiện lỗi: ảnh input ko tồn tại
+		std::cout << "[EXCEPTION] Error with input image.\n";
+		return 0; // Trả về 0
 	}
-	//std::cout << result << std::endl;
-	return result;
+
+	// Chiều rộng của ảnh source
+	int widthSourceImage = srcImage.cols;
+
+	// Chiều cao của ảnh source
+	int heigthSourceImage = srcImage.rows;
+
+	// Số channels của ảnh source
+	int sourceChannels = srcImage.channels();
+
+	size_t sourceWidthStep = srcImage.step[0];
+
+	AffineTransform affineTransform;
+
+	affineTransform.Translate(-heigthSourceImage / 2, -widthSourceImage / 2);
+	affineTransform.Rotate(angle);
+	affineTransform.Translate(heigthSourceImage / 2, widthSourceImage / 2);
+
+	cv::Mat inverseMatrix = affineTransform.getMatrixTransform().inv();
+	affineTransform.setMatrixTransform(inverseMatrix);
+
+	if (sourceChannels == 1) {
+		dstImage = cv::Mat::zeros(heigthSourceImage, widthSourceImage, CV_8UC1);
+	}
+	else if (sourceChannels == 3) {
+		dstImage = cv::Mat::zeros(heigthSourceImage, widthSourceImage, CV_8UC3);
+	}
+	else {
+		std::cout << "[EXCEPTION]\n";
+
+	}
+
+	GeometricTransformer::Transform(srcImage, dstImage, &affineTransform, interpolator);
+
+	inverseMatrix.release();
+	affineTransform.~AffineTransform();
+	return 1;
+}
+
+
+
+int GeometricTransformer::Transform(
+	const Mat &beforeImage,
+	Mat &afterImage,
+	AffineTransform* transformer,
+	PixelInterpolate* interpolator) {
+		// Kiểm trả ảnh đầu vào
+		if (!beforeImage.data) {
+			// Phát hiện lỗi: ảnh input ko tồn tại
+			std::cout << "[EXCEPTION] Error with input image.\n";
+			return 0; // Trả về 0
+		}
+		// Chiều rộng của ảnh source
+		int widthBeforeImage = beforeImage.cols;
+		// Chiều cao của ảnh source
+		int heigthBeforeImage = beforeImage.rows;
+		// Số channels của ảnh source
+		int sourceChannels = beforeImage.channels();
+		// Width step của ảnh source
+		size_t sourceWidthStep = beforeImage.step[0];
+		// Lấy ma trận affine
+		cv::Mat matrixTransform = transformer->getMatrixTransform();
+		float B[] =
+		{
+			0, 0, 1.0,
+		};
+		cv::Mat P = cv::Mat(3, 1, CV_32FC1, B);
+		// Con trỏ ảnh gốc
+		uchar* pSrc = beforeImage.data;
+		// Chiều cao của ảnh destination
+		int heightAfterImage = afterImage.rows;
+		// Chiều rộng của ảnh destination
+		int widthAfterImage = afterImage.cols;
+		for (int i = 0; i < heightAfterImage; i++)
+		{
+			uchar* pData = afterImage.ptr<uchar>(i);
+			for (int j = 0; j < widthAfterImage; j++)
+			{
+				// Đặt Px = x, Py = y với x, y là tọa độ đối với tâm (0,0) là gốc trên cùng bên trái
+				P.ptr<float>(0)[0] = i * 1.0;
+				P.ptr<float>(1)[0] = j * 1.0;
+				// Tìm tọa độ thực trên ảnh gốc
+				cv::Mat srcP = matrixTransform * P;
+				// tx, ty là index thực của điểm ảnh trên ma trận ảnh gốc
+				float tx = srcP.ptr<float>(0)[0];
+				float ty = srcP.ptr<float>(1)[0];
+				// Chỉ xét tx, ty nằm trong ảnh gốc
+				if (tx >= 0 && ty >= 0 && tx < heigthBeforeImage && ty < widthBeforeImage)
+				{
+					for (int c = 0; c < sourceChannels; c++) {
+						// Áp dụng Interpolate cho từng channel
+						//pData[j * sourceChannels + c] = interpolator->Interpolate(tx, ty, pSrc + c, sourceWidthStep, sourceChannels);
+					}
+				}
+			}
+		}
+		// Giải phóng ma trận P
+		P.release();
+		// Giải phóng ma trận biến đổi
+		matrixTransform.release();
+		return 1;
 }

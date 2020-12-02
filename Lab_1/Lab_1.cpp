@@ -73,21 +73,24 @@ void printMat(Mat m) {
 	}
 }
 
-int main2(int argc, string argv[])
+int main(int argc, string argv[])
 {
-	//Mat image = imread("E:\\4.jpg", IMREAD_COLOR); // Read the file
-	Mat image = imread("E:\\4.jpg", IMREAD_GRAYSCALE); // Read the file
+	Mat image = imread("E:\\3.jpg", IMREAD_COLOR); // Read the file
+	//Mat image = imread("E:\\3.jpg", IMREAD_GRAYSCALE); // Read the file
 	//imwrite("E:\\4.jpg", image);
 
 	ColorTransformer t;
 	Converter c;
 	imshow(" Show 1", image);
 	Mat img2;
+	t.HistogramEqualization(image, img2);
+	imshow(" Show 2", img2);
+
 
 	//t.CalcHistogram(image, img2);
-	t.DrawHistogram(image, img2);
+	//t.DrawHistogram(image, img2);
 
-	printMat(img2);
+	//printMat(img2);
 
 	waitKey(0);
 	return 0;
@@ -95,7 +98,7 @@ int main2(int argc, string argv[])
 
 
 
-int main(int argc, char** argv) {
+int main2(int argc, char** argv) {
 	string command, path;
 	short arg;
 	int result;
