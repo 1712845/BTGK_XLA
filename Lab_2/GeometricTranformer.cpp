@@ -110,12 +110,48 @@ void  AffineTransform::r_TransformPoint(float &x, float &y) {
 	cout << x << " " << y<<endl;
 }
 
-PixelInterpolate::PixelInterpolate() {
+PixelInterpolate::PixelInterpolate() {}
+PixelInterpolate::~PixelInterpolate() {}
 
+vector<uchar> NearestNeighborInterpolate::Interpolate(float tx, float ty, uchar* pSrc, int srcWidthStep, int nChannels) {
+	if (pSrc == NULL)
+		return { 0 };
+	vector<uchar> rbg;
+	int x1 = (int)(floor(tx));
+	int x2 = (int)(ceil(tx));
+	int y1 = (int)(floor(ty));
+	int y2 = (int)(ceil(ty));
+	if ((pSrc + x1 + y1 * srcWidthStep) == NULL || (pSrc + x2 + y2 * srcWidthStep) == NULL)
+		return { 0,0,0 };
+	else
+	{
+		uchar* p = pSrc + (int)(round(tx)) + (int)(round(ty) * srcWidthStep);
+		for (int i = 0; i < nChannels; i++)
+			rbg[i] = p[i];
+	}
+	return rbg;
 }
-PixelInterpolate::~PixelInterpolate() {
+NearestNeighborInterpolate::NearestNeighborInterpolate() {}
+NearestNeighborInterpolate::~NearestNeighborInterpolate() {}
+int GeometricTransformer::Transform(const Mat& beforeImage, Mat& afterImage, AffineTransform* transformer, PixelInterpolate* interpolator) {
+	if (beforeImage.data == NULL || transformer == NULL || interpolator == NULL)
+		return 0;
+	Mat img = Mat(beforeImage);
+	Mat temp(beforeImage.rows, beforeImage.cols, CV_32FC2);
+	for (int y = 0; y < img.rows; y++) {
+		uchar* p = img.ptr<uchar>(y);
+		float* sp = temp.ptr<float>(y);
+		for (int x = 0; x < img.cols; x++, p += img.channels(), sp += 2) {
+			float tx = float(x);
+			float ty = float(y);
+			transformer->TransformPoint(tx, ty);
+			sp[0] = tx;
+			sp[1] = ty;
+		}
+	}
+	return 1;
+}
 
-}
 
 BilinearInterpolate::BilinearInterpolate() {
 }
