@@ -2,113 +2,73 @@
 #include "Converter.h"	
 #include <string>
 #include <fstream>
+#include<iomanip>
 
 using namespace std;
 
+void help() {
 
-
-void help();
-int CalculateHistogram(const Mat& sourceImage, Mat& destinationImage)
-{
-	int histSize = 256;
-	Mat histImg;
-
-	// Ảnh xám
-	if (sourceImage.channels() == 1)
+	string line;
+	ifstream myfile("help.txt");
+	if (myfile.is_open())
 	{
-		// Khởi tạo ảnh chứa histogram
-		Mat temp(histSize, 1, CV_32FC1, Scalar(0));
-
-		// Thống kê số lượng điểm ảnh ở mỗi bins
-		int nRows = sourceImage.rows, nCols = sourceImage.cols;
-		for (int y = 0; y < nRows; y++)
+		while (getline(myfile, line))
 		{
-			const uchar* pRow = sourceImage.ptr<uchar>(y);
-			for (int x = 0; x < nCols; x++)
-			{
-				int index = int(pRow[x]);
-				temp.ptr<float>(index)[0]++;
-			}
+			cout << line << '\n';
 		}
-
-		// Sao chép ảnh temp sang ảnh histImg
-		temp.copyTo(histImg);
+		myfile.close();
 	}
-	else if (sourceImage.channels() == 3) // Ảnh màu
-	{
-		// Khởi tạo ảnh chứa histogram
-		Mat temp(histSize, 1, CV_32FC3, Scalar(0, 0, 0));
+	else cout << "Unable to open file";
+}
 
-		// Thống kê số lượng điểm ảnh ở mỗi bins
-		int nRows = sourceImage.rows, nCols = sourceImage.cols, nChannels = sourceImage.channels();
-		for (int y = 0; y < nRows; y++)
-		{
-			const uchar* pRow = sourceImage.ptr<uchar>(y);
-			for (int x = 0; x < nCols; x++, pRow += nChannels)
-			{
-				temp.ptr<float>(int(pRow[0]))[0]++;
-				temp.ptr<float>(int(pRow[1]))[1]++;
-				temp.ptr<float>(int(pRow[2]))[2]++;
-			}
-		}
+void showImage(Mat img) {
+	if (img.data) {
+		imshow("Destination Image", img);
+		waitKey(0);
+	}
+}
 
-		// Sao chép ảnh temp sang ảnh histImg
-		temp.copyTo(histImg);
+bool isGrayImage(Mat img) // returns true if the given 3 channel image is B = G = R
+{
+	Mat dst;
+	Mat bgr[3];
+
+	//tach thanh 3 kenh mau
+	split(img, bgr);
+
+	//sai so giua 2 array
+	absdiff(bgr[0], bgr[1], dst);
+
+	//co gia tri khac biet --> anh mau
+	if (countNonZero(dst))
+		return false;
+
+	absdiff(bgr[0], bgr[2], dst);
+
+	return !countNonZero(dst);
+}
+
+void readImage(string path, Mat& img) {
+
+	Mat temp = imread(path);
+
+	if (isGrayImage(temp)) {
+		img = imread(path, IMREAD_GRAYSCALE);
 	}
 	else {
-		return 0;
-	}
-
-	// Sao chép dữ liệu ảnh histogram sang ảnh output.
-	histImg.copyTo(destinationImage);
-	return 1;
-}
-
-void printMat(Mat m) {
-	for (int i = 0; i < m.rows; i++) {
-		for (int j = 0; j < m.cols; j++) {
-			cout << m.at<int>(i, j)<<"\t";
-		}
-		cout << "\n";
+		img = imread(path, IMREAD_COLOR);
 	}
 }
 
-int main(int argc, string argv[])
-{
-	Mat image = imread("E:\\3.jpg", IMREAD_COLOR); // Read the file
-	//Mat image = imread("E:\\3.jpg", IMREAD_GRAYSCALE); // Read the file
-	//imwrite("E:\\4.jpg", image);
 
-	ColorTransformer t;
-	Converter c;
-	imshow(" Show 1", image);
-	Mat img2;
-	t.HistogramEqualization(image, img2);
-	imshow(" Show 2", img2);
-
-
-	//t.CalcHistogram(image, img2);
-	//t.DrawHistogram(image, img2);
-
-	//printMat(img2);
-
-	waitKey(0);
-	return 0;
-}
-
-
-
-int main2(int argc, char** argv) {
+int main(int argc, char** argv) {
 	string command, path;
 	short arg;
 	int result;
 	ColorTransformer colorTransformer;
 	Converter converter;
 
-	//path test
-	path = "E:\\3.jpg";
-
-	Mat sourceImage;
+	Mat  sourceImage;
 	Mat destImage;
 	Mat histMatrix, histImage;
 
@@ -120,8 +80,9 @@ int main2(int argc, char** argv) {
 	else {
 		command = string(argv[1]);
 		path = string(argv[2]);
-		sourceImage = imread(path, IMREAD_COLOR);//???
-		//if (sourceImage.data)
+
+
+		readImage(path, sourceImage);
 		imshow("Source Image", sourceImage);
 
 
@@ -129,28 +90,44 @@ int main2(int argc, char** argv) {
 
 			if (command == "--rgb2gray") {
 				result = converter.Convert(sourceImage, destImage, 0);
+				showImage(destImage);
 			}
 			else if (command == "--gray2rgb") {
 				result = converter.Convert(sourceImage, destImage, 1);
+				showImage(destImage);
 
 			}
 			else if (command == "--rgb2hsv") {
 				result = converter.Convert(sourceImage, destImage, 2);
+				showImage(destImage);
 
 			}
 			else if (command == "--hsv2rgb") {
 				result = converter.Convert(sourceImage, destImage, 3);
+				//showImage(destImage);
 
 			}
 			else if (command == "--hist") {
 				result = colorTransformer.CalcHistogram(sourceImage, histMatrix);
 
+				for (int i = 0; i < histMatrix.rows; i++) {
+					for (int j = 0; j < histMatrix.cols; j++) {
+						std::cout << "(" << setw(3) << left<< i << " , " << j << "): " << setw(15)<< left << histMatrix.at<int>(i, j);
+					}
+					std::cout << "\n";
+				}
+
+				showImage(sourceImage);
+				
 			}
 			else if (command == "--equalhist") {
 				result = colorTransformer.HistogramEqualization(sourceImage, destImage);
+				showImage(destImage);
 			}
 			else if (command == "--drawhist") {
-				result = colorTransformer.DrawHistogram(histMatrix, histImage);
+				colorTransformer.CalcHistogram(sourceImage, histMatrix);
+				result = colorTransformer.DrawHistogram(histMatrix, destImage);
+				showImage(destImage);
 			}
 
 			else if (command == "--help") {
@@ -167,45 +144,36 @@ int main2(int argc, char** argv) {
 
 			if (command == "--bright") {
 				result = colorTransformer.ChangeBrighness(sourceImage, destImage, arg);
+				showImage(destImage);
+
 			}
 			else if (command == "--contrast") {
 				result = colorTransformer.ChangeContrast(sourceImage, destImage, arg);
+				showImage(destImage);
+
 			}
 			else if (command == "--compare") {
-				string imgPath = (string)(argv[3]);
-				Mat sourceImage2 = imread(imgPath);
-				colorTransformer.CompareImage(sourceImage, sourceImage2);
+				cout << "here12" << endl;
+
+				string path2 = (string)(argv[3]);
+				cout << path2 << endl;
+
+				//Mat sourceImage2 ;
+				//readImage(path2, sourceImage2);
+				//imshow("sdf", sourceImage2);
+				//waitKey(0);
+				//cout<<colorTransformer.CompareImage(sourceImage, sourceImage2);
 			}
 			else {
 				help();
 			}
-
 		}
 		else {
 			help();
 		}
-
 	}
 
-	if (destImage.data) {
-		imshow("Destination Image", destImage);
-		waitKey(0);
-	}
 	return 1;
 }
 
 
-void help() {
-
-	string line;
-	ifstream myfile("help.txt");
-	if (myfile.is_open())
-	{
-		while (getline(myfile, line))
-		{
-			cout << line << '\n';
-		}
-		myfile.close();
-	}
-	else cout << "Unable to open file";
-}

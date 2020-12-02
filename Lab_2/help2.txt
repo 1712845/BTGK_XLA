@@ -1,0 +1,8 @@
+Usage:  
+  <Lab02.exe> <Command> <Interpolate> <InputPath> <CmdArguments>
+Commands:
+  --zoom                       thu phong anh
+  --resize                     thay doi kich thuoc anh
+  --rotate                     xoay anh quanh tam (bao toan noi dung anh)
+  --rotateN                    xoay anh quanh tam (khong bao toan noi dung anh)
+  --flip                       doi xung anh qua Ox hay Oy

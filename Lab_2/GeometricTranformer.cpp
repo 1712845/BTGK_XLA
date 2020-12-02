@@ -24,15 +24,15 @@ void AffineTransform::Translate(float dx, float dy) {
 
 	r_matrixTransform.at<float>(0, 2) = -dx; // tăng 1 đoạn x thì affine nghịch phải giảm 1 đoạn x
 	r_matrixTransform.at<float>(1, 2) = -dy; // tăng 1 đoạn y thì affine nghịch phải giảm 1 đoạn y
-	
-	_matrixTransform = temp*_matrixTransform ;
-	r_matrixTransform = r_matrixTransform* r_temp; // đổi thứ tự, ví dụ affine thuận là scale rồi xoay, 
+
+	_matrixTransform = temp * _matrixTransform;
+	r_matrixTransform = r_matrixTransform * r_temp; // đổi thứ tự, ví dụ affine thuận là scale rồi xoay, 
 													//thì affine nghịch phải xoay rồi mới scale ngược.
 	cout << _matrixTransform << endl;
 	cout << r_matrixTransform << endl;
 }
 
-void AffineTransform::Rotate(float angle){
+void AffineTransform::Rotate(float angle) {
 	angle = angle * PI / 180; // Đổi ra độ ra radian
 	Mat temp = cv::Mat::eye(3, 3, CV_32FC1);
 	Mat r_temp = cv::Mat::eye(3, 3, CV_32FC1); // ma trận tính toán cho affine ngược
@@ -40,7 +40,7 @@ void AffineTransform::Rotate(float angle){
 	if (temp.empty() || r_temp.empty()) {
 		return;
 	}
-	
+
 	temp.at<float>(0, 0) = cos(angle);
 	temp.at<float>(0, 1) = -sin(angle);
 	temp.at<float>(1, 0) = sin(angle);
@@ -51,8 +51,8 @@ void AffineTransform::Rotate(float angle){
 	r_temp.at<float>(1, 0) = sin(-angle);
 	r_temp.at<float>(1, 1) = cos(-angle);
 
-	_matrixTransform = temp*_matrixTransform ;
-	r_matrixTransform = r_matrixTransform *r_temp ;
+	_matrixTransform = temp * _matrixTransform;
+	r_matrixTransform = r_matrixTransform * r_temp;
 	cout << _matrixTransform << endl;
 	cout << r_matrixTransform << endl;
 }
@@ -68,16 +68,16 @@ void AffineTransform::Scale(float sx, float sy) {
 	temp.at<float>(0, 0) = sx;
 	temp.at<float>(1, 1) = sy;
 
-	r_temp.at<float>(0, 0) = 1.0/sx; // ngược với affine
-	r_temp.at<float>(1, 1) = 1.0/sy;
+	r_temp.at<float>(0, 0) = 1.0 / sx; // ngược với affine
+	r_temp.at<float>(1, 1) = 1.0 / sy;
 
-	_matrixTransform = temp*_matrixTransform ;
-	r_matrixTransform = r_matrixTransform*r_temp;
+	_matrixTransform = temp * _matrixTransform;
+	r_matrixTransform = r_matrixTransform * r_temp;
 	cout << _matrixTransform << endl;
 	cout << r_matrixTransform << endl;
 }
 
-void AffineTransform::TransformPoint(float &x, float &y){
+void AffineTransform::TransformPoint(float &x, float &y) {
 	Mat temp = cv::Mat::eye(3, 1, CV_32F);
 
 	if (temp.empty()) {
@@ -87,10 +87,10 @@ void AffineTransform::TransformPoint(float &x, float &y){
 	temp.at<float>(0, 0) = x;
 	temp.at<float>(1, 0) = y;
 	temp.at<float>(2, 0) = 1;
-	temp = _matrixTransform*temp;
+	temp = _matrixTransform * temp;
 	x = temp.at<float>(0, 0);
 	y = temp.at<float>(1, 0);
-	cout << x <<" "<< y<<endl;
+	cout << x << " " << y << endl;
 }
 
 void  AffineTransform::r_TransformPoint(float &x, float &y) {
@@ -103,11 +103,11 @@ void  AffineTransform::r_TransformPoint(float &x, float &y) {
 	r_temp.at<float>(0, 0) = x;
 	r_temp.at<float>(1, 0) = y;
 	r_temp.at<float>(2, 0) = 1;
-	r_temp =r_matrixTransform*r_temp;
+	r_temp = r_matrixTransform * r_temp;
 
-	x = r_temp.at<float>(0, 0); 
+	x = r_temp.at<float>(0, 0);
 	y = r_temp.at<float>(1, 0);
-	cout << x << " " << y<<endl;
+	cout << x << " " << y << endl;
 }
 
 PixelInterpolate::PixelInterpolate() {}
@@ -274,20 +274,12 @@ int GeometricTransformer::Resize(const Mat& srcImage, Mat& dstImage, int newWidt
 
 int GeometricTransformer::RotateKeepImage(
 	const cv::Mat & srcImage, cv::Mat & dstImage, float angle, PixelInterpolate * interpolator) {
-	// Kiểm trả ảnh đầu vào
 	if (!srcImage.data) {
-		// Phát hiện lỗi: ảnh input ko tồn tại
-		std::cout << "[EXCEPTION] Error with input image.\n";
-		return 0; // Trả về 0
+		std::cout << "k tim thay anh.\n";
+		return 0;
 	}
-
-	// Chiều rộng của ảnh source
 	int widthSourceImage = srcImage.cols;
-
-	// Chiều cao của ảnh source
 	int heigthSourceImage = srcImage.rows;
-
-	// Số channels của ảnh source
 	int sourceChannels = srcImage.channels();
 
 	size_t sourceWidthStep = srcImage.step[0];
@@ -301,7 +293,7 @@ int GeometricTransformer::RotateKeepImage(
 	affineTransform.Rotate(angle);
 	affineTransform.Translate(dstHeight / 2, dstWidth / 2);
 
-	cv::Mat inverseMatrix = affineTransform.getMatrixTransform().inv();
+	cv::Mat inverseMatrix = affineTransform.Rotate(90);
 
 	affineTransform.setMatrixTransform(inverseMatrix);
 
@@ -313,14 +305,11 @@ int GeometricTransformer::RotateKeepImage(
 	else if (sourceChannels == 3) {
 		dstImage = cv::Mat::zeros(dstHeight, dstWidth, CV_8UC3);
 	}
-	else {
-		std::cout << "[EXCEPTION]\n";
-
-	}
 
 	GeometricTransformer::Transform(srcImage, dstImage, &affineTransform, interpolator);
 	inverseMatrix.release();
 	affineTransform.~AffineTransform();
+	imshow(dstImage);
 	return 1;
 }
 
@@ -342,31 +331,21 @@ int GeometricTransformer::RotateUnkeepImage(
 	float angle,
 	PixelInterpolate * interpolator) {
 
-	// Kiểm trả ảnh đầu vào
 	if (!srcImage.data) {
-		// Phát hiện lỗi: ảnh input ko tồn tại
 		std::cout << "[EXCEPTION] Error with input image.\n";
-		return 0; // Trả về 0
+		return 0;
 	}
 
-	// Chiều rộng của ảnh source
 	int widthSourceImage = srcImage.cols;
-
-	// Chiều cao của ảnh source
 	int heigthSourceImage = srcImage.rows;
-
-	// Số channels của ảnh source
 	int sourceChannels = srcImage.channels();
-
 	size_t sourceWidthStep = srcImage.step[0];
-
 	AffineTransform affineTransform;
-
 	affineTransform.Translate(-heigthSourceImage / 2, -widthSourceImage / 2);
 	affineTransform.Rotate(angle);
 	affineTransform.Translate(heigthSourceImage / 2, widthSourceImage / 2);
 
-	cv::Mat inverseMatrix = affineTransform.getMatrixTransform().inv();
+	cv::Mat inverseMatrix = affineTransform.Rotate(90);
 	affineTransform.setMatrixTransform(inverseMatrix);
 
 	if (sourceChannels == 1) {
@@ -375,15 +354,10 @@ int GeometricTransformer::RotateUnkeepImage(
 	else if (sourceChannels == 3) {
 		dstImage = cv::Mat::zeros(heigthSourceImage, widthSourceImage, CV_8UC3);
 	}
-	else {
-		std::cout << "[EXCEPTION]\n";
-
-	}
-
 	GeometricTransformer::Transform(srcImage, dstImage, &affineTransform, interpolator);
-
 	inverseMatrix.release();
 	affineTransform.~AffineTransform();
+	imshow(dstImage);
 	return 1;
 }
 
@@ -394,59 +368,59 @@ int GeometricTransformer::Transform(
 	Mat &afterImage,
 	AffineTransform* transformer,
 	PixelInterpolate* interpolator) {
-		// Kiểm trả ảnh đầu vào
-		if (!beforeImage.data) {
-			// Phát hiện lỗi: ảnh input ko tồn tại
-			std::cout << "[EXCEPTION] Error with input image.\n";
-			return 0; // Trả về 0
-		}
-		// Chiều rộng của ảnh source
-		int widthBeforeImage = beforeImage.cols;
-		// Chiều cao của ảnh source
-		int heigthBeforeImage = beforeImage.rows;
-		// Số channels của ảnh source
-		int sourceChannels = beforeImage.channels();
-		// Width step của ảnh source
-		size_t sourceWidthStep = beforeImage.step[0];
-		// Lấy ma trận affine
-		cv::Mat matrixTransform = transformer->getMatrixTransform();
-		float B[] =
+	// Kiểm trả ảnh đầu vào
+	if (!beforeImage.data) {
+		// Phát hiện lỗi: ảnh input ko tồn tại
+		std::cout << "[EXCEPTION] Error with input image.\n";
+		return 0; // Trả về 0
+	}
+	// Chiều rộng của ảnh source
+	int widthBeforeImage = beforeImage.cols;
+	// Chiều cao của ảnh source
+	int heigthBeforeImage = beforeImage.rows;
+	// Số channels của ảnh source
+	int sourceChannels = beforeImage.channels();
+	// Width step của ảnh source
+	size_t sourceWidthStep = beforeImage.step[0];
+	// Lấy ma trận affine
+	cv::Mat matrixTransform = transformer->getMatrixTransform();
+	float B[] =
+	{
+		0, 0, 1.0,
+	};
+	cv::Mat P = cv::Mat(3, 1, CV_32FC1, B);
+	// Con trỏ ảnh gốc
+	uchar* pSrc = beforeImage.data;
+	// Chiều cao của ảnh destination
+	int heightAfterImage = afterImage.rows;
+	// Chiều rộng của ảnh destination
+	int widthAfterImage = afterImage.cols;
+	for (int i = 0; i < heightAfterImage; i++)
+	{
+		uchar* pData = afterImage.ptr<uchar>(i);
+		for (int j = 0; j < widthAfterImage; j++)
 		{
-			0, 0, 1.0,
-		};
-		cv::Mat P = cv::Mat(3, 1, CV_32FC1, B);
-		// Con trỏ ảnh gốc
-		uchar* pSrc = beforeImage.data;
-		// Chiều cao của ảnh destination
-		int heightAfterImage = afterImage.rows;
-		// Chiều rộng của ảnh destination
-		int widthAfterImage = afterImage.cols;
-		for (int i = 0; i < heightAfterImage; i++)
-		{
-			uchar* pData = afterImage.ptr<uchar>(i);
-			for (int j = 0; j < widthAfterImage; j++)
+			// Đặt Px = x, Py = y với x, y là tọa độ đối với tâm (0,0) là gốc trên cùng bên trái
+			P.ptr<float>(0)[0] = i * 1.0;
+			P.ptr<float>(1)[0] = j * 1.0;
+			// Tìm tọa độ thực trên ảnh gốc
+			cv::Mat srcP = matrixTransform * P;
+			// tx, ty là index thực của điểm ảnh trên ma trận ảnh gốc
+			float tx = srcP.ptr<float>(0)[0];
+			float ty = srcP.ptr<float>(1)[0];
+			// Chỉ xét tx, ty nằm trong ảnh gốc
+			if (tx >= 0 && ty >= 0 && tx < heigthBeforeImage && ty < widthBeforeImage)
 			{
-				// Đặt Px = x, Py = y với x, y là tọa độ đối với tâm (0,0) là gốc trên cùng bên trái
-				P.ptr<float>(0)[0] = i * 1.0;
-				P.ptr<float>(1)[0] = j * 1.0;
-				// Tìm tọa độ thực trên ảnh gốc
-				cv::Mat srcP = matrixTransform * P;
-				// tx, ty là index thực của điểm ảnh trên ma trận ảnh gốc
-				float tx = srcP.ptr<float>(0)[0];
-				float ty = srcP.ptr<float>(1)[0];
-				// Chỉ xét tx, ty nằm trong ảnh gốc
-				if (tx >= 0 && ty >= 0 && tx < heigthBeforeImage && ty < widthBeforeImage)
-				{
-					for (int c = 0; c < sourceChannels; c++) {
-						// Áp dụng Interpolate cho từng channel
-						pData[j * sourceChannels + c] = interpolator->Interpolate(tx, ty, pSrc + c, sourceWidthStep, sourceChannels)[i];
-					}
+				for (int c = 0; c < sourceChannels; c++) {
+					// Áp dụng Interpolate cho từng channel
+					pData[j * sourceChannels + c] = interpolator->Interpolate(tx, ty, pSrc + c, sourceWidthStep, sourceChannels)[i];
 				}
 			}
 		}
-		// Giải phóng ma trận P
-		P.release();
-		// Giải phóng ma trận biến đổi
-		matrixTransform.release();
-		return 1;
+	}
+	// Giải phóng ma trận P
+	P.release();
+	// Giải phóng ma trận biến đổi
+	matrixTransform.release();
+	return 1;
 }
